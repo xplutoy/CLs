@@ -64,10 +64,14 @@ def main():
                     model.eval(test_scenario[observed_task_id], test_metric_log)
 
             tqdm.write(
-                f'Test : Model {task_id} train_acc= {train_log.online_accuracy:.4f}, test_acc= {test_metric_log.accuracy:.4f}' +
-                f' test_avg_acc_A= {test_metric_log.accuracy_A:.4f}, backward_transfer= {test_metric_log.backward_transfer}' + 
-                f' forward_transfer= {test_metric_log.forward_transfer}, positive_backward_transfer= {test_metric_log.positive_backward_transfer}'+
-                f' remembering= {test_metric_log.remembering}, forgetting= {test_metric_log.forgetting}' +
+                f'Test : Model {task_id} train_acc= {train_log.online_accuracy:.4f}' +
+                f' test_acc= {test_metric_log.accuracy:.4f}' +
+                f' test_avg_acc_A= {test_metric_log.accuracy_A:.4f}' +
+                f' backward_transfer= {test_metric_log.backward_transfer:.4f}' +
+                f' forward_transfer= {test_metric_log.forward_transfer:.4f}' +
+                f' positive_backward_transfer= {test_metric_log.positive_backward_transfer:.4f}' +
+                f' remembering= {test_metric_log.remembering:.4f}' +
+                f' forgetting= {test_metric_log.forgetting:.4f}' +
                 f' test_per_task_acc={str(test_metric_log.accuracy_per_task)}'
             )
 
@@ -79,11 +83,9 @@ def main():
     for task_id in range(n_tasks):
         for epoch_id in range(args.n_epochs):
             task_epoch_losses = train_losses[task_id][epoch_id]
-            
             for loss in task_epoch_losses:
                 writer.add_scalar('train_loss', loss, train_global_step)
                 train_global_step = train_global_step + 1
-            
         test_epoch_losses = test_losses[task_id][-1]
         for loss in test_epoch_losses:
             writer.add_scalar('test_loss', loss, test_global_step)
