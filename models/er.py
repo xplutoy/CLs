@@ -3,10 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from continuum import rehearsal,Logger
+from continuum import rehearsal
 from utils.buffer import rand_batch_get
 from utils.weight import init_weights
-from tqdm import tqdm
 
 
 class Er(nn.Module):
@@ -16,7 +15,6 @@ class Er(nn.Module):
                  lr: float,
                  batch_size: int,
                  minibatch_size: int,
-                 metric_log: Logger,
                  device: torch.device = 'cpu',
                  ) -> None:
         super().__init__()
@@ -28,7 +26,6 @@ class Er(nn.Module):
         self.batch_size = batch_size
         self.minibatch_size = minibatch_size
         self.device = device
-        self.metric_log = metric_log
 
         self.buffer = rehearsal.RehearsalMemory(
             memory_size=buffer_size,
@@ -36,7 +33,7 @@ class Er(nn.Module):
         )
         init_weights(self.net)
 
-    def observe(self, taskset):
+    def observe(self, taskset, log=None):
         self.net.train()
         task_loader = DataLoader(
             taskset, batch_size=self.batch_size, shuffle=True)
@@ -61,16 +58,14 @@ class Er(nn.Module):
             self.optimizer.step()
 
             preds = torch.argmax(logits, dim=-1)
-            # acc = (preds == y).to(torch.float64).mean().item()
-            # tqdm.write(
-            #     f"task_id={self.log.nb_tasks}, online_acc = {acc}, loss = {loss.item()}")
-
-            self.metric_log.add([preds, y, t], subset='train')
+            if log != None:
+                log.add([preds, y, t], subset='train')
+                log.add(loss.item(), 'loss', 'train')
 
         self.buffer.add(*taskset.get_raw_samples(), None)
 
     @torch.no_grad()
-    def eval(self, taskset):
+    def eval(self, taskset, log=None):
         self.net.eval()
         task_loader = DataLoader(
             taskset, batch_size=self.batch_size, shuffle=False)
@@ -82,4 +77,7 @@ class Er(nn.Module):
 
             logits = self.net(x)
             preds = torch.argmax(logits, dim=-1)
-            self.metric_log.add([preds, y, t], subset='test')
+            loss = self.criterion(logits, y)
+            if log != None:
+                log.add([preds, y, t], subset='test')
+                log.add(loss.item(), 'loss', 'test')
