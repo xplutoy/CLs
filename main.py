@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from scenarios.classics import permut_mnist_scenarios
+from scenarios.classics import select_scenarios
 import torch
 
 from models.er import Er
@@ -21,63 +21,68 @@ def main():
     gpu_ids = [i for i in range(torch.cuda.device_count())]
     device = torch.device(
         f'cuda:{gpu_ids[0]}' if torch.cuda.is_available() else 'cpu')
+    
+    scenario_dict = select_scenarios(args.scenario)
+    n_tasks = scenario_dict['train'].nb_tasks
+    nb_classes = scenario_dict['train'].nb_classes
+    train_scenario = scenario_dict['train']
+    test_scenario = scenario_dict['test']
 
     mlp = SimpleMLP()
     model = Er(mlp,
                buffer_size=args.buffer_size,
+               n_class= nb_classes,
                lr=args.lr,
                batch_size=args.batch_size,
                minibatch_size=args.minibatch_size,
                device=device
                )
 
-    n_tasks = permut_mnist_scenarios['train'].nb_tasks
-    train_scenario = permut_mnist_scenarios['train']
-    test_scenario = permut_mnist_scenarios['test']
-
     # train & test
-    train_log = Logger(['performance', 'loss'], ['train'])
+    train_metric_log = Logger(['performance', 'loss'], ['train'])
+    test_metric_log = Logger(['performance', 'loss'], ['test'])
     with trange(n_tasks, position=0) as tt:
         for task_id, taskset in enumerate(train_scenario):
             tt.set_description(f'Task {task_id} Processing')
 
             # task level train
             if task_id != 0:
-                train_log.end_task()
+                train_metric_log.end_task()
             with trange(args.n_epochs, position=1, leave=False) as et:
                 for epoch in range(args.n_epochs):
                     et.set_description(f'Task {task_id} Epoch {epoch}')
 
-                    model.observe(taskset, train_log)
+                    if epoch != 0:
+                        train_metric_log.end_epoch()
+                    model.observe(taskset, train_metric_log)                   
 
                     et.update()
-                    train_log.end_epoch()
             tt.update()
 
+            
             # 一个任务训练完后，用已经观察到的任务(包含当前任务，所以遍历任务+1)测试数据测试当前模型
-            test_metric_log = Logger(['performance', 'loss'], ['test'])
-            for current_task_id in range(task_id+1):
-                if current_task_id != 0:
-                    test_metric_log.end_task()
-                # 传入已经观察到的任务的测试数据（后面的一些metric需要这种训练方式）
-                for observed_task_id in range(current_task_id+1):
-                    model.eval(test_scenario[observed_task_id], test_metric_log)
-
+            # 传入已经观察到的任务的测试数据（后面的一些metric需要这种训练方式）
+            if task_id != 0:
+                test_metric_log.end_task()
+            for observed_task_id in range(task_id+1):
+                model.eval(test_scenario[observed_task_id], test_metric_log)
+            
+            str_acc_per_task = [f'{acc:.4f}'for acc in test_metric_log.accuracy_per_task]
             tqdm.write(
-                f'Test : Model {task_id} train_acc= {train_log.online_accuracy:.4f}' +
-                f' test_acc= {test_metric_log.accuracy:.4f}' +
+                f'Test : Model {task_id} train_acc= {train_metric_log.online_accuracy:.4f}' +
+                f' test_avg_acc= {test_metric_log.accuracy:.4f}' +
                 f' test_avg_acc_A= {test_metric_log.accuracy_A:.4f}' +
                 f' backward_transfer= {test_metric_log.backward_transfer:.4f}' +
                 f' forward_transfer= {test_metric_log.forward_transfer:.4f}' +
                 f' positive_backward_transfer= {test_metric_log.positive_backward_transfer:.4f}' +
                 f' remembering= {test_metric_log.remembering:.4f}' +
                 f' forgetting= {test_metric_log.forgetting:.4f}' +
-                f' test_per_task_acc={str(test_metric_log.accuracy_per_task)}'
+                f' test_per_task_acc = {str_acc_per_task}'
             )
 
     # 用tensorboard查看训练loss和测试loss的变化
-    writer = SummaryWriter('runs/er')
-    train_losses = train_log.get_logs('loss', 'train')
+    writer = SummaryWriter('runs/er1')
+    train_losses = train_metric_log.get_logs('loss', 'train')
     test_losses = test_metric_log.get_logs('loss', 'test')
     train_global_step, test_global_step = 0, 0
     for task_id in range(n_tasks):

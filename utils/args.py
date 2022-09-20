@@ -12,6 +12,8 @@ def add_experiment_args(parser: ArgumentParser) -> None:
     :param parser: the parser instance
     """
 
+    parser.add_argument('--scenario', type=str, required=True,
+                        help='continul scenario')
     parser.add_argument('--lr', type=float, required=True,
                         help='Learning rate.')
     parser.add_argument('--batch_size', type=int, required=True,

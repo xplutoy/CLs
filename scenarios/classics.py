@@ -26,3 +26,11 @@ permut_mnist_scenarios = {
         shared_label_space=True
     )
 }
+
+def select_scenarios(witch):
+    if witch == 'permut_mnist':
+        return permut_mnist_scenarios
+    elif witch == 'split_mnist':
+        return split_mnist_scenarios
+    else:
+        raise ValueError('only support permut_mnist | split_mnist')

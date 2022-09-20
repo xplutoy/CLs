@@ -12,6 +12,7 @@ class Er(nn.Module):
     def __init__(self,
                  net: nn.Module,
                  buffer_size: int,
+                 n_class: int,
                  lr: float,
                  batch_size: int,
                  minibatch_size: int,
@@ -29,7 +30,9 @@ class Er(nn.Module):
 
         self.buffer = rehearsal.RehearsalMemory(
             memory_size=buffer_size,
-            herding_method="random"
+            herding_method="random",
+            fixed_memory=True,
+            nb_total_classes=n_class,
         )
         init_weights(self.net)
 
@@ -40,12 +43,12 @@ class Er(nn.Module):
 
         for x, y, t in task_loader:
 
-            if len(self.buffer) != 0:
-                _x, _y, _t = rand_batch_get(
-                    self.buffer, self.minibatch_size)
-                x = torch.cat((x, torch.from_numpy(np.expand_dims(_x, 1))))
-                y = torch.cat((y, torch.from_numpy(_y)))
-                t = torch.cat((t, torch.from_numpy(_t)))
+            # if len(self.buffer) != 0:
+            #     _x, _y, _t = rand_batch_get(
+            #         self.buffer, self.minibatch_size)
+            #     x = torch.cat((x, torch.from_numpy(np.expand_dims(_x, 1))))
+            #     y = torch.cat((y, torch.from_numpy(_y)))
+            #     t = torch.cat((t, torch.from_numpy(_t)))
 
             x = x.to(self.device)
             y = y.to(self.device)
