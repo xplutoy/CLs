@@ -3,37 +3,29 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from continuum import rehearsal
-from utils.buffer import rand_batch_get
-from utils.weight import init_weights
+from utils import rand_batch_get
+from utils import init_weights
 
 
 class Er(nn.Module):
     def __init__(self,
-                 net: nn.Module,
-                 buffer_size: int,
-                 n_class: int,
-                 lr: float,
-                 batch_size: int,
-                 minibatch_size: int,
-                 device: torch.device = 'cpu',
-                 ) -> None:
+                net: nn.Module,
+                memory,
+                lr: float,
+                batch_size: int,
+                minibatch_size: int,
+                device: torch.device = 'cpu'
+                ) -> None:
         super().__init__()
 
         self.net = net.to(device)
-        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=lr)
+        self.buffer = memory
+        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=lr, momentum=0.9)
         self.criterion = torch.nn.CrossEntropyLoss()
-        self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.minibatch_size = minibatch_size
         self.device = device
 
-        self.buffer = rehearsal.RehearsalMemory(
-            memory_size=buffer_size,
-            herding_method="random",
-            fixed_memory=True,
-            nb_total_classes=n_class,
-        )
         init_weights(self.net)
 
     def observe(self, taskset, log=None):
@@ -43,12 +35,12 @@ class Er(nn.Module):
 
         for x, y, t in task_loader:
 
-            # if len(self.buffer) != 0:
-            #     _x, _y, _t = rand_batch_get(
-            #         self.buffer, self.minibatch_size)
-            #     x = torch.cat((x, torch.from_numpy(np.expand_dims(_x, 1))))
-            #     y = torch.cat((y, torch.from_numpy(_y)))
-            #     t = torch.cat((t, torch.from_numpy(_t)))
+            if len(self.buffer) != 0:
+                _x, _y, _t = rand_batch_get(
+                    self.buffer, self.minibatch_size)
+                x = torch.cat((x, torch.from_numpy(np.expand_dims(_x, 1))))
+                y = torch.cat((y, torch.from_numpy(_y)))
+                t = torch.cat((t, torch.from_numpy(_t)))
 
             x = x.to(self.device)
             y = y.to(self.device)

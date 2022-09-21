@@ -1,5 +1,5 @@
 from continuum import ClassIncremental, Permutations
-from continuum.datasets import MNIST, CIFAR10, CIFAR100
+from continuum.datasets import MNIST 
 
 split_mnist_scenarios = {
     "train": ClassIncremental(
