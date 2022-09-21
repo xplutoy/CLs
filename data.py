@@ -1,5 +1,5 @@
 from continuum import ClassIncremental, Permutations
-from continuum.datasets import MNIST 
+from continuum.datasets import MNIST
 
 split_mnist_scenarios = {
     "train": ClassIncremental(
@@ -26,6 +26,7 @@ permut_mnist_scenarios = {
         shared_label_space=True
     )
 }
+
 
 def select_scenarios(witch):
     if witch == 'permut_mnist':
