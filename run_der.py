@@ -23,10 +23,10 @@ def main():
         f'cuda:{args.gpu_id}' if torch.cuda.is_available() else 'cpu')
 
     scenario_name = args.scenario
-    scenario_dict = select_scenarios(scenario_name)
+    scenario_dict, net = select_scenarios(scenario_name)
 
     model = Der(
-        net=SimpleMLP(),
+        net=net,
         buffer_size=args.buffer_size,
         lr=args.lr,
         batch_size=args.batch_size,

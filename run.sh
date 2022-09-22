@@ -1,0 +1,2 @@
+python run_er_native.py --gpu_id 0 --buffer_size 1000 --lr 0.01 --batch_size 10 --minibatch_size 10 --n_epochs 1 --alpha 0.5 --beta 0.5 --scenario='permut_mnist'
+python run_der.py --gpu_id 0 --buffer_size 1000 --lr 0.01 --batch_size 10 --minibatch_size 10 --n_epochs 1 --alpha 0.5 --beta 0.5 --scenario='permut_mnist'
