@@ -2,6 +2,7 @@ from continuum import ClassIncremental, Permutations
 from continuum.datasets import MNIST, CIFAR100, CIFAR10
 from backbones.simple_mlp import SimpleMLP
 from backbones.simple_cnn import SimpleCNN
+from torchvision import transforms
 
 split_mnist_scenarios = {
     "train": ClassIncremental(
@@ -32,22 +33,38 @@ permut_mnist_scenarios = {
 cifar10_scenarios = {
     'train': ClassIncremental(
         CIFAR10(data_path="../dataset", download=True, train=True),
-        increment=2
+        increment=2,
+        transformations=[
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)), # https://github.com/kuangliu/pytorch-cifar/issues/19
+        ]
     ),
     'test': ClassIncremental(
         CIFAR10(data_path="../dataset", download=True, train=False),
-        increment=2
+        increment=2,
+        transformations=[
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+        ]
     )
 }
 
 cifar100_scenarios = {
     'train': ClassIncremental(
         CIFAR100(data_path="../dataset", download=True, train=True),
-        increment=10
+        increment=10,
+        transformations=[
+            transforms.ToTensor(),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+        ]
     ),
     'test': ClassIncremental(
         CIFAR100(data_path="../dataset", download=True, train=False),
-        increment=10
+        increment=10,
+        transformations=[
+            transforms.ToTensor(),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+        ]
     )
 }
 

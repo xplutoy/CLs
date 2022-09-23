@@ -3,7 +3,6 @@ import torch
 
 from data import select_scenarios
 from utils import add_rehearsal_args, add_experiment_args
-from backbones.simple_mlp import SimpleMLP
 from models.er_native import ErNative
 from utils import run
 
